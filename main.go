@@ -15,7 +15,7 @@ import (
 
 func main() {
 	// Define flags
-	if len(os.Args) != 2 {Add commentMore actions
+	if len(os.Args) != 2 {
 		printAndExit("You must pass in one argument")
 	}
 	variableName := args[0]

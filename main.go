@@ -2,37 +2,52 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
 func main() {
-	// Define flags
+	// Check for exactly one argument
 	if len(os.Args) != 2 {
 		printAndExit("You must pass in one argument")
 	}
-	variableName := args[0]
+	variableName := os.Args[1]
 	bucketName := strings.Split(variableName, "/")[0]
 	keyName := strings.Join(strings.Split(variableName, "/")[1:], "/")
 
-	// Load AWS configuration
-	cfg, err := config.LoadDefaultConfig(context.Background())
+	// Load AWS configuration with custom endpoint if provided
+	endpoint := os.Getenv("AWS_ENDPOINT_URL")
+	region := os.Getenv("AWS_DEFAULT_REGION")
+	if region == "" {
+		region = "us-east-1"
+	}
+	cfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion(region),
+		config.WithEndpointResolver(
+			aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
+				if endpoint != "" && service == s3.ServiceID {
+					return aws.Endpoint{
+						URL:           endpoint,
+						SigningRegion: region,
+					}, nil
+				}
+				// Fallback to default
+				return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+			}),
+		),
+	)
 	if err != nil {
 		printAndExit(fmt.Sprintf("Failed to load config: %v", err))
 	}
 
-	// Initialize S3 client with explicit endpoint, allowing override from environment
-	endpoint := os.Getenv("AWS_ENDPOINT_URL")
-	svc := s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String(endpoint)
-	})
+	// Initialize S3 client
+	svc := s3.NewFromConfig(cfg)
 
 	// Make sure bucket exists
 	_, err = svc.HeadBucket(context.TODO(), &s3.HeadBucketInput{

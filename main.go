@@ -15,29 +15,8 @@ import (
 
 func main() {
 	// Define flags
-	helpFlag := flag.Bool("h", false, "Show help")
-	helpLongFlag := flag.Bool("help", false, "Show help")
-	versionFlag := flag.Bool("V", false, "Show version")
-	flag.Parse()
-
-	// Handle help and version flags
-	if *helpFlag || *helpLongFlag {
-		fmt.Println("Usage: summon <space-name>/<key-path>")
-		fmt.Println("Fetches a secret from an S3-compatible storage service (e.g., DigitalOcean Spaces).")
-		fmt.Println("Flags:")
-		fmt.Println("  -h, --help  Show this help message")
-		fmt.Println("  -V          Show version")
-		os.Exit(0)
-	}
-	if *versionFlag {
-		fmt.Println("summon-s3 version 0.1.0") // Replace with actual version
-		os.Exit(0)
-	}
-
-	// Check for correct number of arguments
-	args := flag.Args()
-	if len(args) != 1 {
-		printAndExit("You must pass in one argument in the format <space-name>/<key-path>")
+	if len(os.Args) != 2 {Add commentMore actions
+		printAndExit("You must pass in one argument")
 	}
 	variableName := args[0]
 	bucketName := strings.Split(variableName, "/")[0]
